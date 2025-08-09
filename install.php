@@ -61,6 +61,48 @@ $queries = [
         visits INT DEFAULT 0,
         date DATE,
         UNIQUE KEY unique_page_date (page, date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+    
+    // Таблица пользователей
+    "CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL UNIQUE COLLATE utf8mb4_unicode_ci,
+        email VARCHAR(100) NOT NULL UNIQUE COLLATE utf8mb4_unicode_ci,
+        password VARCHAR(255) NOT NULL COLLATE utf8mb4_unicode_ci,
+        is_active BOOLEAN DEFAULT TRUE,
+        last_login TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+    
+    // Таблица пользовательского контента (на модерации)
+    "CREATE TABLE IF NOT EXISTS user_content (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        category_id INT,
+        title VARCHAR(255) COLLATE utf8mb4_unicode_ci,
+        text TEXT NOT NULL COLLATE utf8mb4_unicode_ci,
+        type ENUM('status', 'sms', 'fact') NOT NULL COLLATE utf8mb4_unicode_ci,
+        status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending' COLLATE utf8mb4_unicode_ci,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+    
+    // Таблица новостей
+    "CREATE TABLE IF NOT EXISTS news (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL COLLATE utf8mb4_unicode_ci,
+        content TEXT NOT NULL COLLATE utf8mb4_unicode_ci,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+    
+    // Таблица онлайн пользователей
+    "CREATE TABLE IF NOT EXISTS online_users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        ip_address VARCHAR(45) NOT NULL UNIQUE COLLATE utf8mb4_unicode_ci,
+        user_agent TEXT COLLATE utf8mb4_unicode_ci,
+        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
 ];
 
@@ -104,6 +146,14 @@ try {
     foreach ($settings_data as $setting) {
         $stmt->execute($setting);
     }
+    
+    // Добавляем тестовую новость
+    $stmt = $db->prepare("INSERT IGNORE INTO news (title, content, is_active) VALUES (?, ?, ?)");
+    $stmt->execute([
+        'Добро пожаловать!', 
+        'Добро пожаловать на наш обновленный сайт! Теперь вы можете регистрироваться и добавлять свои статусы, SMS и факты. Все материалы проходят модерацию перед публикацией.',
+        1
+    ]);
     
     echo "База данных успешно создана!<br>";
     echo "Логин админа: admin<br>";

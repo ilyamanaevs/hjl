@@ -4,6 +4,7 @@ require_once '../config/database.php';
 require_once '../classes/Content.php';
 require_once '../classes/Category.php';
 require_once '../classes/Settings.php';
+require_once '../classes/UserContent.php';
 require_once '../includes/functions.php';
 
 requireLogin();
@@ -14,10 +15,12 @@ $db = $database->getConnection();
 $content = new Content($db);
 $category = new Category($db);
 $settings = new Settings($db);
+$userContent = new UserContent($db);
 
 // Статистика
 $total_content = $content->getCount();
 $categories = $category->getAll();
+$pending_moderation = $userContent->getPendingCount();
 
 // Получение статистики посещений
 $stats_query = "SELECT page, SUM(visits) as total_visits FROM statistics GROUP BY page ORDER BY total_visits DESC LIMIT 10";
@@ -40,6 +43,8 @@ $page_stats = $stats_stmt->fetchAll(PDO::FETCH_ASSOC);
             <a href="index.php" class="active">Главная</a>
             <a href="content.php">Контент</a>
             <a href="categories.php">Категории</a>
+            <a href="moderation.php">Модерация <?php if ($pending_moderation > 0): ?>(<?php echo $pending_moderation; ?>)<?php endif; ?></a>
+            <a href="news.php">Новости</a>
             <a href="settings.php">Настройки</a>
             <a href="logout.php">Выход</a>
         </div>
@@ -60,7 +65,12 @@ $page_stats = $stats_stmt->fetchAll(PDO::FETCH_ASSOC);
                 
                 <div class="stat-card">
                     <h3>Онлайн</h3>
-                    <div class="stat-number"><?php echo getOnlineUsers(); ?></div>
+                    <div class="stat-number"><?php echo $settings->get('online_users') ?: '333'; ?></div>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>На модерации</h3>
+                    <div class="stat-number"><?php echo $pending_moderation; ?></div>
                 </div>
             </div>
 

@@ -4,6 +4,7 @@ require_once 'config/database.php';
 require_once 'classes/Category.php';
 require_once 'classes/Content.php';
 require_once 'classes/Settings.php';
+require_once 'classes/OnlineCounter.php';
 require_once 'includes/functions.php';
 
 $database = new Database();
@@ -12,6 +13,10 @@ $db = $database->getConnection();
 $category = new Category($db);
 $content = new Content($db);
 $settings = new Settings($db);
+$online = new OnlineCounter($db);
+
+// Обновляем активность пользователя
+$online->updateUserActivity($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT'] ?? '');
 
 $slug = isset($_GET['slug']) ? sanitize_input($_GET['slug']) : '';
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -111,7 +116,7 @@ updateStatistics('category_' . $slug);
 
 <div class="foot"> 
     <a href='/'>
-        <img src='style/img/on.png' alt='*'> <?php echo getOnlineUsers(); ?><small>чел</small>
+        <img src='style/img/on.png' alt='*'> <?php echo $online->getTotalOnlineCount($settings); ?><small>чел</small>
     </a> 
 </div>
 

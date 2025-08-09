@@ -33,7 +33,12 @@ function truncateText($text, $length = 100) {
 }
 
 function updateStatistics($page) {
-    global $db;
+    global $db, $database;
+    if (!$db && $database) {
+        $db = $database->getConnection();
+    }
+    if (!$db) return;
+    
     $today = date('Y-m-d');
     
     $query = "INSERT INTO statistics (page, visits, date) VALUES (?, 1, ?) 
@@ -45,7 +50,14 @@ function updateStatistics($page) {
 }
 
 function getOnlineUsers() {
-    global $settings;
-    return $settings->get('online_users') ?: '347';
+    global $settings, $online;
+    if ($online && $settings) {
+        return $online->getTotalOnlineCount($settings);
+    }
+    return $settings ? $settings->get('online_users') ?: '347' : '347';
+}
+
+function isUserLoggedIn() {
+    return isset($_SESSION['user_id']);
 }
 ?>

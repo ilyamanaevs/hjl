@@ -2,18 +2,23 @@
 session_start();
 require_once 'config/database.php';
 require_once 'classes/Settings.php';
+require_once 'classes/OnlineCounter.php';
 require_once 'includes/functions.php';
 
 $database = new Database();
 $db = $database->getConnection();
 $settings = new Settings($db);
+$online = new OnlineCounter($db);
+
+// Обновляем активность пользователя
+$online->updateUserActivity($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT'] ?? '');
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 1;
 
 $pages = [
     1 => ['title' => 'Новости', 'content' => 'Здесь будут размещаться новости сайта.'],
     2 => ['title' => 'Отзывы', 'content' => 'Отзывы пользователей о нашем сайте.'],
-    3 => ['title' => 'Контакты', 'content' => 'Свяжитесь с нами: admin@statusms.ru']
+    3 => ['title' => 'Контакты', 'content' => 'Свяжитесь с нами: ' . ($settings->get('admin_email') ?: 'admin@statusms.ru')]
 ];
 
 $page_info = isset($pages[$id]) ? $pages[$id] : $pages[1];
@@ -59,7 +64,7 @@ updateStatistics('info_' . $id);
 
 <div class="foot"> 
     <a href='/'>
-        <img src='style/img/on.png' alt='*'> <?php echo getOnlineUsers(); ?><small>чел</small>
+        <img src='style/img/on.png' alt='*'> <?php echo $online->getTotalOnlineCount($settings); ?><small>чел</small>
     </a> 
 </div>
 

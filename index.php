@@ -4,6 +4,8 @@ require_once 'config/database.php';
 require_once 'classes/Category.php';
 require_once 'classes/Content.php';
 require_once 'classes/Settings.php';
+require_once 'classes/News.php';
+require_once 'classes/OnlineCounter.php';
 require_once 'includes/functions.php';
 
 $database = new Database();
@@ -12,9 +14,15 @@ $db = $database->getConnection();
 $category = new Category($db);
 $content = new Content($db);
 $settings = new Settings($db);
+$news = new News($db);
+$online = new OnlineCounter($db);
+
+// Обновляем активность пользователя
+$online->updateUserActivity($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT'] ?? '');
 
 $categories = $category->getAll();
 $site_title = $settings->get('site_title') ?: 'Классные статусы и СМС';
+$latest_news = $news->getLatest();
 
 updateStatistics('index');
 ?>
@@ -40,22 +48,39 @@ updateStatistics('index');
 </div>
 
 <div class="bzx4">
+    <?php if (isset($_SESSION['user_id'])): ?>
+        <a href='user_panel.php' class='ua'>Кабинет</a>
+    <?php else: ?>
+        <a href='login.php' class='ua'>Вход</a>
+    <?php endif; ?>
     <a href='info.php?id=1' class='ua'>Новости</a>
-    <a href='info.php?id=2' class='ua'>Отзывы</a> 
     <a href="info.php?id=3" class='ua'>Контакты</a>
 </div>
 
 <div class="news">
     <div class="inf">
-        На нашем сайте Вы найдёте: онлайн Сборник 
-        бесплатных смс с возможностью анонимной 
-        отправки обычных и флеш смс через интернет.
-        Классные статусы про любовь и жизнь, со
-        смыслом, смешные статусы для вк и 
-        одноклассников. А так же самые Интересные 
-        факты о жизни, о человеке, о деньгах, про
-        животных, факты обо всё.
-        И это ещё не всё! ... <br>
+        <?php if ($latest_news): ?>
+            <strong><?php echo htmlspecialchars($latest_news['title'], ENT_QUOTES, 'UTF-8'); ?></strong><br>
+            <?php 
+            $content_preview = truncateText($latest_news['content'], 200);
+            echo nl2br(htmlspecialchars($content_preview, ENT_QUOTES, 'UTF-8')); 
+            ?>
+            <?php if (strlen($latest_news['content']) > 200): ?>
+                ... <br>
+            <?php else: ?>
+                <br>
+            <?php endif; ?>
+        <?php else: ?>
+            На нашем сайте Вы найдёте: онлайн Сборник 
+            бесплатных смс с возможностью анонимной 
+            отправки обычных и флеш смс через интернет.
+            Классные статусы про любовь и жизнь, со
+            смыслом, смешные статусы для вк и 
+            одноклассников. А так же самые Интересные 
+            факты о жизни, о человеке, о деньгах, про
+            животных, факты обо всё.
+            И это ещё не всё! ... <br>
+        <?php endif; ?>
         <a href='/'><small>Далее</small></a>
     </div>
 </div>
@@ -76,9 +101,15 @@ updateStatistics('index');
 <div class="pnl">
     <table style="width:101%; margin:0;text-align: center">
         <tr>
-            <td><a href="/"><img src="style/img/db.png" height="70" width="70"></a></td>
-            <td><a href="/"><img src="style/img/db1.png" height="70" width="70"></a></td>   
-            <td><a href="/"><img src="style/img/db2.png" height="70" width="70"></a></td>
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <td><a href="user_panel.php"><img src="style/img/db.png" height="70" width="70"></a></td>
+                <td><a href="user_panel.php"><img src="style/img/db1.png" height="70" width="70"></a></td>   
+                <td><a href="user_panel.php"><img src="style/img/db2.png" height="70" width="70"></a></td>
+            <?php else: ?>
+                <td><a href="register.php"><img src="style/img/db.png" height="70" width="70"></a></td>
+                <td><a href="register.php"><img src="style/img/db1.png" height="70" width="70"></a></td>   
+                <td><a href="register.php"><img src="style/img/db2.png" height="70" width="70"></a></td>
+            <?php endif; ?>
         </tr>
     </table>
 </div>
@@ -97,7 +128,7 @@ updateStatistics('index');
 
 <div class="foot"> 
     <a href='/'>
-        <img src='style/img/on.png' alt='*'> <?php echo getOnlineUsers(); ?><small>чел</small>
+        <img src='style/img/on.png' alt='*'> <?php echo $online->getTotalOnlineCount($settings); ?><small>чел</small>
     </a> 
 </div>
 
